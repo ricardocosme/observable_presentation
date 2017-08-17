@@ -1,0 +1,365 @@
+\documentclass[t]{beamer}
+% \usetheme{Luebeck}
+% \usetheme{Malmoe}
+\usetheme{default}
+
+\usepackage{hyperref}
+\usepackage[utf8]{inputenc} % this is needed for german umlauts
+\usepackage[english]{babel} % this is needed for german umlauts
+\usepackage[T1]{fontenc}    % this is needed for correct output 
+                            % of umlauts in pdf
+\usepackage{xcolor, colortbl}
+\usepackage{listings}
+
+\setbeamersize{text margin left=10pt}
+
+\title{Observable}
+\subtitle{Geração de observáveis através da metaprogramação}
+\subject{C++}
+\date{}
+
+\begin{document}
+
+  \lstset{language=C++,
+    basicstyle=\small,
+    keywordstyle=\color{blue}\ttfamily,
+    stringstyle=\color{red}\ttfamily,
+    commentstyle=\color{gray}\ttfamily,
+    morecomment=[l][\color{magenta}]{\#}
+  }
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Problema}
+  Observar a alteração de estado de objetos C++
+
+  \begin{itemize}
+  \item<1->{\textit{Observer pattern (GoF)}}
+    \begin{itemize}
+    \item<2->{Modo arcaíco: classes base \textit{Observable} e \textit{Observer}}
+      \begin{itemize}
+      \item<3->{Poliformismo dinâmico} 
+      \item<4->{Notificação abrangente (não sei exatamente o que mudou)} 
+      \end{itemize}
+    \end{itemize}
+    \item<5->{Modo moderno: sinais e slots}
+      \begin{itemize}
+      \item<6->{Poliformismo estático} 
+        \begin{itemize}
+        \item<7->{Sem herança (polimórfica)} 
+        \item<8->{Uso de composição} 
+        \end{itemize}
+      \item<9->{Notificações específicas (sinais customizados))} 
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\textit{Observed}}
+  Classe que é observada
+
+  \begin{lstlisting}[escapeinside=`']
+    using skills_t = std::map<
+      std::size_t, /*skill level*/
+      std::string  /*skill name*/
+    >;
+
+    struct person_t {
+      std::string name;
+      std::size_t age;
+      skills_t skills;
+    };
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\textit{Boost.Signals2}}
+  Uma solução usando \textit{Boost.Signals2}
+
+  \begin{onlyenv}<1>
+  \begin{lstlisting}[escapeinside=`']
+    struct person_t {
+      std::string name() const noexcept
+      { return _name; }
+      
+      void name(std::string val)
+      {
+        _name = val;
+        _name_changed(_name);
+      }
+    private:    
+      std::string _name;
+      boost::signals2::signal<void(std::string)>
+        _name_changed;
+    };
+  \end{lstlisting}
+  \end{onlyenv}
+
+  \begin{onlyenv}<2->
+  \begin{lstlisting}[basicstyle=\tiny]
+    struct person_t {
+      std::string name() const noexcept
+      { return _name; }
+      
+      void name(std::string val)
+      {
+        _name = val;
+        _name_changed(_name);
+      }
+
+      std::size_t age() const noexcept
+      { return _age; }
+      
+      void age(std::size_t val)
+      {
+        _age = val;
+        _age_changed(_age);
+      }
+    private:    
+      std::string _name;
+      std::size_t _age;
+
+      boost::signals2::signal<void(std::string)> _name_changed;
+      boost::signals2::signal<void(std::size_t)> _age_changed;
+    };
+  \end{lstlisting}
+  \end{onlyenv}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\textit{Boost.Signals2}}
+  Notificação abrangente
+
+  \begin{lstlisting}[basicstyle=\tiny,escapeinside=`']
+    struct person_t {
+      std::string name() const noexcept
+      { return _name; }
+      
+      void name(std::string val)
+      {
+        _name = val;
+        _name_changed(_name);
+        `\alert{\_on\_changed();}' 
+      }
+
+      std::size_t age() const noexcept
+      { return _age; }
+      
+      void age(std::size_t val)
+      {
+        _age = val;
+        _age_changed(_age);
+        `\alert{\_on\_changed();}' 
+      }
+    private:    
+      std::string _name;
+      std::size_t _age;
+
+      boost::signals2::signal<void(std::string)> _name_changed;
+      boost::signals2::signal<void(std::size_t)> _age_changed;
+      `\alert{boost::signals2::signal<void()> \_any\_changed;}'
+    };
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\textit{Boost.Signals2}}
+  Containers da STL?
+
+  \begin{lstlisting}[basicstyle=\tiny,escapeinside=`']
+    struct person_t {
+      //... setters e getters para name e age ...      
+      `\alert{skills\_t::iterator insertSkill(std::size\_t level, std::string name)}'
+      `\alert{\{}'
+      `\alert{  auto it = \_skills.emplace(level, name).first;}'
+      `\alert{  \_skill\_inserted(it);}'
+      `\alert{  return it;}'
+      `\alert{\}}'
+    private:    
+      std::string _name;
+      std::size_t _age;
+      `\alert{skills\_t \_skills;}'
+
+      boost::signals2::signal<void(std::string)> _name_changed;
+      boost::signals2::signal<void(std::size_t)> _age_changed;
+      boost::signals2::signal<void()> \_any\_changed;
+      `\alert{boost::signals2::signal<void(skills\_t::iterator)> 
+        \_skill\_inserted;}'
+    };
+  \end{lstlisting}
+
+  \begin{itemize}
+    \item<2->{API proprietária para acessar o container}
+    \item<3->{Existem 6 sobrecargas para unordered\_map::insert() em C++11!}
+    \item<4->{Elementos observáveis?}
+    \item<5->{Alteração no elemento notifica o dono do container? (person\_t)}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\textit{Observable}}
+  Biblioteca para construir \textit{Observables} em tempos de compilação usando sinais e slots
+  \begin{itemize}
+  \item<2->{Elimina código \textit{boilerplate} para a construção do \textit{Observable}}
+    \begin{itemize}
+    \item<3->{Agilidade na implementação}
+    \item<4->{Evita erros de uma solução \textit{handwritten}}
+    \end{itemize}
+  \item<5->{Não intrusivo. \textit{Observed} está separado do \textit{Observable}}
+  \item<6->{Suporte a containers da STL}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\textit{Observable - person\_t}}
+  \begin{lstlisting}[basicstyle=\small]
+    OBSERVABLE_CLASS_GEN(
+      observable_person,
+      person_t,
+      ((std::string, name))
+      ((std::size_t, age))
+      ((skills_t, skills))
+    )
+  \end{lstlisting}
+
+  \begin{onlyenv}<2->
+  \begin{lstlisting}[basicstyle=\small]
+    inline observable_person 
+    observable_factory(person_t& observed) {
+      return observable_person(observed, 
+                               observed.name, 
+                               observed.age,
+                               observed.skills);
+    }
+  \end{lstlisting}
+  \end{onlyenv}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\textit{Observable - person\_t}}
+  \begin{lstlisting}[basicstyle=\small,escapeinside=`']
+    person_t observed{"maria", 26};
+  \end{lstlisting}
+
+  \begin{onlyenv}<2->
+  \begin{lstlisting}[basicstyle=\small]
+    auto operson = observable_factory(observed);
+  \end{lstlisting}
+  \end{onlyenv}
+
+  \begin{onlyenv}<3->
+  \begin{lstlisting}[basicstyle=\small]
+    operson.on_change<name>(
+        [](std::string name)
+        {
+          std::cout << "name_has_changed_to_" << name;
+        });
+  \end{lstlisting}
+  \end{onlyenv}
+
+  \begin{onlyenv}<4->
+  \begin{lstlisting}[basicstyle=\small]
+    operson.assign<name>("MARIA");
+  \end{lstlisting}
+  \end{onlyenv}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\textit{Observable - person\_t}}
+
+  \begin{onlyenv}<1->
+  \begin{lstlisting}[basicstyle=\small]
+    auto& oskills = operson.get<skills>();
+  \end{lstlisting}
+  \end{onlyenv}
+
+  \begin{onlyenv}<2->
+  \begin{lstlisting}[basicstyle=\small]
+    oskills.on_insert(
+        [](const skills_t&, skills_t::const_iterator it)
+        {
+          std::cout << "new_skill_was_added:_"
+                    << it->second << "_with_level_"
+                    << it->first;
+        });
+  \end{lstlisting}
+  \end{onlyenv}
+
+  \begin{onlyenv}<3->
+  \begin{lstlisting}[basicstyle=\small]
+    oskills.emplace(8, "woodworking");
+  \end{lstlisting}
+  \end{onlyenv}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\textit{Containers e Variant}}
+  \textit{Observables} de containers da STL agem como se fossem os próprios containers
+  \begin{itemize}
+  \item{map}
+  \item{unordered\_map}
+  \item{unordered\_set}
+  \item{vector}
+  \item<2->{Não guardam \textit{Observables}}
+  \end{itemize}
+
+  \begin{itemize}
+  \item<2->{Suporte a variant}
+    \begin{itemize}
+    \item{Visitor visita \textit{Observables} do tipos do variant}
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\textit{Sinais}}
+  \begin{itemize}
+    \item<1->{on\_change}
+      \begin{itemize}
+        \item{Alteração em qualquer parte do objeto}
+      \end{itemize}
+    \item<2->{Containers}
+      \begin{itemize}
+        \item{on\_insert}
+        \item{on\_erase}
+        \item{on\_value\_change}
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\textit{Operações básicas}}
+
+  \begin{itemize}
+  \item<1->{Obter \textit{Observed} a partir de \textit{Observable}}
+    \begin{itemize}
+    \item<1->{const Observed\& observable.get()}
+    \end{itemize}
+  \item<2->{Obter \textit{Observable} de um membro de classe observável}
+    \begin{itemize}
+    \item<2->{auto\& omember = observable.get<member>()}
+      \begin{itemize}
+      \item<3->{Retorna uma referência}
+      \end{itemize}
+    \end{itemize}
+  \item<4->{Obter \textit{Observable} do elemento de um container ou variant}
+    \begin{itemize}
+    \item<4->{auto omember = ocontainer.at(key)}
+      \begin{itemize}
+      \item<5->{Retorna um std::shared\_ptr para o observável do elemento}
+      \end{itemize}
+    \end{itemize}
+  \item<5->{Obter tipo de um \textit{Observable}}
+    \begin{itemize}
+    \item<5->{using OFoo = observable::observable\_of\_t<Foo>}
+      \begin{itemize}
+      \item<6->{Útil para passar \textit{Observables} para funções ou definir visitors de observáveis}
+      \end{itemize}
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\end{document}
