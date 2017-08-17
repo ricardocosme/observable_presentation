@@ -44,16 +44,12 @@
       \item<3->{Poliformismo dinâmico} 
       \item<4->{Notificação abrangente (não sei exatamente o que mudou)} 
       \end{itemize}
-    \end{itemize}
     \item<5->{Modo moderno: sinais e slots}
       \begin{itemize}
       \item<6->{Poliformismo estático} 
-        \begin{itemize}
-        \item<7->{Sem herança (polimórfica)} 
-        \item<8->{Uso de composição} 
-        \end{itemize}
-      \item<9->{Notificações específicas (sinais customizados))} 
+      \item<7->{Notificações específicas (sinais customizados))} 
       \end{itemize}
+    \end{itemize}
   \end{itemize}
 \end{frame}
 
@@ -142,7 +138,7 @@
       {
         _name = val;
         _name_changed(_name);
-        `\alert{\_on\_changed();}' 
+        `\alert{\_any\_changed();}' 
       }
 
       std::size_t age() const noexcept
@@ -152,7 +148,7 @@
       {
         _age = val;
         _age_changed(_age);
-        `\alert{\_on\_changed();}' 
+        `\alert{\_any\_changed();}' 
       }
     private:    
       std::string _name;
@@ -185,7 +181,7 @@
 
       boost::signals2::signal<void(std::string)> _name_changed;
       boost::signals2::signal<void(std::size_t)> _age_changed;
-      boost::signals2::signal<void()> \_any\_changed;
+      boost::signals2::signal<void()> _any_changed;
       `\alert{boost::signals2::signal<void(skills\_t::iterator)> 
         \_skill\_inserted;}'
     };
@@ -194,8 +190,8 @@
   \begin{itemize}
     \item<2->{API proprietária para acessar o container}
     \item<3->{Existem 6 sobrecargas para unordered\_map::insert() em C++11!}
-    \item<4->{Elementos observáveis?}
-    \item<5->{Alteração no elemento notifica o dono do container? (person\_t)}
+    \item<4->{Alteração no elemento notifica o dono do container? (person\_t)}
+    \item<5->{Elementos observáveis?}
   \end{itemize}
 \end{frame}
 
@@ -296,21 +292,27 @@
 \end{frame}
 
 \begin{frame}[fragile]
-  \frametitle{\textit{Containers e Variant}}
-  \textit{Observables} de containers da STL agem como se fossem os próprios containers
+  \frametitle{\textit{Tipos de \textit{Observables}}}
   \begin{itemize}
-  \item{map}
-  \item{unordered\_map}
-  \item{unordered\_set}
-  \item{vector}
-  \item<2->{Não guardam \textit{Observables}}
-  \end{itemize}
-
-  \begin{itemize}
-  \item<2->{Suporte a variant}
-    \begin{itemize}
-    \item{Visitor visita \textit{Observables} do tipos do variant}
-    \end{itemize}
+    \item<1->{Containers da STL}
+      \begin{itemize}
+      \item<1->{map, unordered\_map, unordered\_set e vector}
+      \item<2->{Os elementos são \textit{observables}}
+      \item<3->{Não guardam \textit{observables}}
+      \end{itemize}
+    \item<4->{Classes}
+      \begin{itemize}
+      \item<4->{Os membros são \textit{observables}}
+      \end{itemize}
+    \item<5->{Variant}
+      \begin{itemize}
+      \item<5->{boost::Variant}
+      \item<6->{Visitor visita \textit{observable} do elemento}
+      \end{itemize}
+    \item<7->{Valor}
+      \begin{itemize}
+      \item<7->{Qualquer objeto que modela o concept \textit{Assignable}}
+      \end{itemize}
   \end{itemize}
 \end{frame}
 
@@ -320,12 +322,33 @@
     \item<1->{on\_change}
       \begin{itemize}
         \item{Alteração em qualquer parte do objeto}
+        \item{Disponível em qualquer \textit{observable}}
       \end{itemize}
-    \item<2->{Containers}
+    \item<2->{on\_insert e on\_erase}
       \begin{itemize}
-        \item{on\_insert}
-        \item{on\_erase}
-        \item{on\_value\_change}
+        \item{Inserção e remoção de elementos de containers}
+      \end{itemize}
+    \item<3->{on\_value\_change}
+      \begin{itemize}
+        \item{Alteração no estado de elementos de containers e variants}
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\textit{\textit{Ownership} dos \textit{observables}}}
+  \begin{itemize}
+    \item<1->{Classes}
+      \begin{itemize}
+        \item{\textit{Ownership} do programador}
+      \end{itemize}
+    \item<2->{Membros de classes}
+      \begin{itemize}
+        \item{\textit{Ownership} da classe}
+      \end{itemize}
+    \item<3->{Elementos de containers e variant}
+      \begin{itemize}
+        \item{\textit{Ownership} compartilhado}
       \end{itemize}
   \end{itemize}
 \end{frame}
@@ -352,11 +375,11 @@
       \item<5->{Retorna um std::shared\_ptr para o observável do elemento}
       \end{itemize}
     \end{itemize}
-  \item<5->{Obter tipo de um \textit{Observable}}
+  \item<6->{Obter tipo de um \textit{Observable}}
     \begin{itemize}
-    \item<5->{using OFoo = observable::observable\_of\_t<Foo>}
+    \item<6->{using OFoo = observable::observable\_of\_t<Foo>}
       \begin{itemize}
-      \item<6->{Útil para passar \textit{Observables} para funções ou definir visitors de observáveis}
+      \item<7->{Útil para passar \textit{Observables} para funções ou definir visitors de observáveis}
       \end{itemize}
     \end{itemize}
   \end{itemize}
