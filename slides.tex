@@ -47,7 +47,8 @@
     \item<5->{Modo moderno: sinais e slots}
       \begin{itemize}
       \item<6->{Poliformismo estático} 
-      \item<7->{Notificações específicas (sinais customizados))} 
+      \item<7->{Não é tão intrusivo} 
+      \item<8->{Notificações específicas (sinais customizados)} 
       \end{itemize}
     \end{itemize}
   \end{itemize}
@@ -73,7 +74,6 @@
 
 \begin{frame}[fragile]
   \frametitle{\textit{Boost.Signals2}}
-  Uma solução usando \textit{Boost.Signals2}
 
   \begin{onlyenv}<1>
   \begin{lstlisting}[escapeinside=`']
@@ -95,7 +95,7 @@
   \end{onlyenv}
 
   \begin{onlyenv}<2->
-  \begin{lstlisting}[basicstyle=\tiny]
+  \begin{lstlisting}[basicstyle=\fontsize{8}{8}\selectfont]
     struct person_t {
       std::string name() const noexcept
       { return _name; }
@@ -127,9 +127,8 @@
 
 \begin{frame}[fragile]
   \frametitle{\textit{Boost.Signals2}}
-  Notificação abrangente
 
-  \begin{lstlisting}[basicstyle=\tiny,escapeinside=`']
+  \begin{lstlisting}[basicstyle=\fontsize{7}{7}\selectfont,escapeinside=`']
     struct person_t {
       std::string name() const noexcept
       { return _name; }
@@ -163,9 +162,8 @@
 
 \begin{frame}[fragile]
   \frametitle{\textit{Boost.Signals2}}
-  Containers da STL?
 
-  \begin{lstlisting}[basicstyle=\tiny,escapeinside=`']
+  \begin{lstlisting}[basicstyle=\fontsize{8}{8}\selectfont,escapeinside=`']
     struct person_t {
       //... setters e getters para name e age ...      
       `\alert{skills\_t::iterator insertSkill(std::size\_t level, std::string name)}'
@@ -174,11 +172,11 @@
       `\alert{  \_skill\_inserted(it);}'
       `\alert{  return it;}'
       `\alert{\}}'
+      //erase, find, size e etc
     private:    
       std::string _name;
       std::size_t _age;
       `\alert{skills\_t \_skills;}'
-
       boost::signals2::signal<void(std::string)> _name_changed;
       boost::signals2::signal<void(std::size_t)> _age_changed;
       boost::signals2::signal<void()> _any_changed;
@@ -186,26 +184,25 @@
         \_skill\_inserted;}'
     };
   \end{lstlisting}
-
-  \begin{itemize}
-    \item<2->{API proprietária para acessar o container}
-    \item<3->{Existem 6 sobrecargas para unordered\_map::insert() em C++11!}
-    \item<4->{Alteração no elemento notifica o dono do container? (person\_t)}
-    \item<5->{Elementos observáveis?}
-  \end{itemize}
+      \begin{itemize}
+      \item<2->{API proprietária para acessar o container}
+      \item<3->{Existem 6 sobrecargas para unordered\_map::insert() em C++11!}
+      \item<4->{Alteração no elemento notifica o dono do container? (person\_t)}
+      \item<5->{Elementos observáveis?}
+      \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
   \frametitle{\textit{Observable}}
-  Biblioteca para construir \textit{Observables} em tempos de compilação usando sinais e slots
+  Contrói \textit{Observables} em tempos de compilação usando sinais e slots
   \begin{itemize}
-  \item<2->{Elimina código \textit{boilerplate} para a construção do \textit{Observable}}
+  \item<1->{Elimina código \textit{boilerplate} para a construção do \textit{Observable}}
     \begin{itemize}
-    \item<3->{Agilidade na implementação}
-    \item<4->{Evita erros de uma solução \textit{handwritten}}
+    \item<2->{Agilidade na implementação}
+    \item<3->{Evita erros de uma solução \textit{handwritten}}
     \end{itemize}
-  \item<5->{Não intrusivo. \textit{Observed} está separado do \textit{Observable}}
-  \item<6->{Suporte a containers da STL}
+  \item<4->{Não intrusivo. \textit{Observed} está separado do \textit{Observable}}
+  \item<5->{Suporte a containers da STL}
   \end{itemize}
 \end{frame}
 
@@ -258,7 +255,7 @@
 
   \begin{onlyenv}<4->
   \begin{lstlisting}[basicstyle=\small]
-    operson.assign<name>("MARIA");
+    operson.get<name>() = "MARIA";
   \end{lstlisting}
   \end{onlyenv}
 \end{frame}
@@ -275,7 +272,8 @@
   \begin{onlyenv}<2->
   \begin{lstlisting}[basicstyle=\small]
     oskills.on_insert(
-        [](const skills_t&, skills_t::const_iterator it)
+        [](const skills_t&, 
+           skills_t::const_iterator it)
         {
           std::cout << "new_skill_was_added:_"
                     << it->second << "_with_level_"
@@ -351,6 +349,24 @@
         \item{\textit{Ownership} compartilhado}
       \end{itemize}
   \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\textit{Observed} público ou privado}
+  Livre escolha em disponibilizar ou não alterações diretas em \textit{Observed}
+  \begin{itemize}
+    \item{Exemplo para esconder:}
+  \end{itemize}
+  \begin{lstlisting}[basicstyle=\small]
+    struct operson_t : observable_person {
+      operson_t(person_t p) 
+        : observable_person(observable_factory(_observed)) 
+        , _observed(std::move(p))
+      {}
+    private:
+      person_t _observed;
+    };
+  \end{lstlisting}
 \end{frame}
 
 \begin{frame}[fragile]
